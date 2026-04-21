@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="HabitFlow">
+<title>HabitFlow</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; background: #0d0d1a; font-family: -apple-system, sans-serif; color: #f0f0ff; }
+
+#app { max-width: 430px; margin: 0 auto; padding: 48px 20px 100px; min-height: 100vh; }
+
+h1 { font-size: 26px; font-weight: 800; background: linear-gradient(90deg, #4f8ef7, #c084fc, #f7316a); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 4px; }
+.date { font-size: 13px; color: rgba(240,240,255,0.45); margin-bottom: 20px; }
+
+.streak-row { display: flex; align-items: center; gap: 8px; background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); border-radius: 16px; padding: 10px 16px; margin-bottom: 20px; }
+.streak-row span { font-size: 14px; font-weight: 700; color: #f59e0b; }
+
+.card { border-radius: 20px; padding: 18px; margin-bottom: 16px; }
+.card-cali { background: rgba(79,142,247,0.07); border: 1px solid rgba(79,142,247,0.25); }
+.card-salsa { background: rgba(247,49,106,0.07); border: 1px solid rgba(247,49,106,0.25); }
+
+.card-top { display: flex; align-items: center; gap: 12px; }
+.card-icon { width: 46px; height: 46px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+.icon-cali { background: rgba(79,142,247,0.2); }
+.icon-salsa { background: rgba(247,49,106,0.2); }
+.card-info { flex: 1; }
+.card-name { font-size: 17px; font-weight: 700; }
+.card-sub { font-size: 12px; color: rgba(240,240,255,0.5); margin-top: 2px; }
+
+.tap-btn { width: 44px; height: 44px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2); background: transparent; font-size: 20px; color: rgba(255,255,255,0.25); cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.tap-btn.done-cali { background: #4f8ef7; border-color: #4f8ef7; color: #fff; }
+.tap-btn.done-salsa { background: #f7316a; border-color: #f7316a; color: #fff; }
+
+.add-btn { width: 100%; margin-top: 14px; padding: 12px; border-radius: 12px; border: 1.5px dashed rgba(79,142,247,0.5); background: rgba(79,142,247,0.08); color: #4f8ef7; font-size: 15px; font-weight: 600; cursor: pointer; }
+
+#modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; flex-direction: column; justify-content: flex-end; }
+#modal-bg.open { display: flex; }
+#modal { background: #15152a; border-radius: 28px 28px 0 0; padding: 0 0 50px; max-height: 92vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.modal-handle { width: 40px; height: 5px; background: rgba(255,255,255,0.15); border-radius: 3px; margin: 14px auto 18px; }
+.modal-title { font-size: 20px; font-weight: 800; padding: 0 22px 4px; }
+.modal-hint { font-size: 12px; color: rgba(240,240,255,0.4); padding: 0 22px 16px; }
+
+.ex { background: #1e1e38; border-radius: 16px; padding: 14px 16px; margin: 0 16px 12px; }
+.ex-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.ex-name { font-size: 14px; font-weight: 700; }
+
+.sets-count-row { display: flex; align-items: center; gap: 8px; }
+.sets-count-row label { font-size: 12px; color: rgba(240,240,255,0.45); }
+.sets-count-row input { width: 52px; padding: 6px 8px; background: rgba(255,255,255,0.07); border: 1.5px solid rgba(255,255,255,0.15); border-radius: 8px; color: #f0f0ff; font-size: 16px; text-align: center; outline: none; -webkit-appearance: none; }
+.sets-count-row input:focus { border-color: #4f8ef7; }
+
+.set-rows { display: flex; flex-direction: column; gap: 8px; }
+.set-row { display: flex; align-items: center; gap: 10px; }
+.set-label { font-size: 12px; color: rgba(240,240,255,0.4); width: 44px; flex-shrink: 0; }
+.set-input { flex: 1; padding: 10px 8px; background: rgba(255,255,255,0.07); border: 1.5px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f0f0ff; font-size: 20px; text-align: center; outline: none; -webkit-appearance: none; }
+.set-input:focus { border-color: #4f8ef7; }
+.set-unit { font-size: 12px; color: rgba(240,240,255,0.35); width: 28px; flex-shrink: 0; }
+
+.save-btn { display: block; margin: 18px 16px 0; width: calc(100% - 32px); padding: 16px; background: linear-gradient(135deg, #4f8ef7, #7c3aed); border: none; border-radius: 16px; color: #fff; font-size: 17px; font-weight: 700; cursor: pointer; }
+.save-btn:active { opacity: 0.85; }
+
+#toast { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); background: #22d07a; color: #fff; font-size: 14px; font-weight: 700; padding: 12px 24px; border-radius: 30px; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; z-index: 999; }
+#toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>HabitFlow 🔥</h1>
+  <div class="date" id="date-el"></div>
+
+  <div class="streak-row">
+    <span id="streak-txt">🔥 Streak: 0 Tage</span>
+  </div>
+
+  <div class="card card-cali">
+    <div class="card-top">
+      <div class="card-icon icon-cali">🏋️</div>
+      <div class="card-info">
+        <div class="card-name">Calisthenics</div>
+        <div class="card-sub" id="cali-sub">Heute noch kein Training</div>
+      </div>
+      <button class="tap-btn" id="cali-btn" onclick="toggleCali()">✓</button>
+    </div>
+    <button class="add-btn" onclick="openModal()">＋ Training eintragen</button>
+  </div>
+
+  <div class="card card-salsa">
+    <div class="card-top">
+      <div class="card-icon icon-salsa">💃</div>
+      <div class="card-info">
+        <div class="card-name">Salsa</div>
+        <div class="card-sub" id="salsa-sub">Heute noch nicht getanzt</div>
+      </div>
+      <button class="tap-btn" id="salsa-btn" onclick="toggleSalsa()">✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="modal-bg" onclick="bgClick(event)">
+  <div id="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🏋️ Training eintragen</div>
+    <div class="modal-hint">Anzahl Sets eingeben → Felder erscheinen automatisch</div>
+
+    <div class="ex">
+      <div class="ex-header">
+        <div class="ex-name">💪 Muscle Ups</div>
+        <div class="sets-count-row">
+          <label>Sets:</label>
+          <input type="number" inputmode="numeric" id="sc-1" min="0" max="10" placeholder="0" oninput="buildSets(1)">
+        </div>
+      </div>
+      <div class="set-rows" id="sets-1"></div>
+    </div>
+
+    <div class="ex">
+      <div class="ex-header">
+        <div class="ex-name">💪 Klimmzüge</div>
+        <div class="sets-count-row">
+          <label>Sets:</label>
+          <input type="number" inputmode="numeric" id="sc-2" min="0" max="10" placeholder="0" oninput="buildSets(2)">
+        </div>
+      </div>
+      <div class="set-rows" id="sets-2"></div>
+    </div>
+
+    <div class="ex">
+      <div class="ex-header">
+        <div class="ex-name">💪 Dips</div>
+        <div class="sets-count-row">
+          <label>Sets:</label>
+          <input type="number" inputmode="numeric" id="sc-3" min="0" max="10" placeholder="0" oninput="buildSets(3)">
+        </div>
+      </div>
+      <div class="set-rows" id="sets-3"></div>
+    </div>
+
+    <div class="ex">
+      <div class="ex-header">
+        <div class="ex-name">💪 Bizeps-Klimmzüge</div>
+        <div class="sets-count-row">
+          <label>Sets:</label>
+          <input type="number" inputmode="numeric" id="sc-4" min="0" max="10" placeholder="0" oninput="buildSets(4)">
+        </div>
+      </div>
+      <div class="set-rows" id="sets-4"></div>
+    </div>
+
+    <button class="save-btn" onclick="saveTraining()">Training speichern ✓</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+var EXERCISES = ['Muscle Ups', 'Klimmzüge', 'Dips', 'Bizeps-Klimmzüge'];
+var caliDone = false;
+var salsaDone = false;
+var streak = 0;
+
+try {
+  var saved = localStorage.getItem('hf4');
+  if (saved) {
+    var d = JSON.parse(saved);
+    var today = getToday();
+    if (d.date === today) {
+      caliDone = d.cali || false;
+      salsaDone = d.salsa || false;
+    }
+    streak = d.streak || 0;
+  }
+} catch(e) {}
+
+function getToday() {
+  var d = new Date();
+  return d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
+}
+
+function persist() {
+  try {
+    localStorage.setItem('hf4', JSON.stringify({
+      date: getToday(), cali: caliDone, salsa: salsaDone, streak: streak
+    }));
+  } catch(e) {}
+}
+
+function render() {
+  document.getElementById('date-el').textContent = new Date().toLocaleDateString('de-DE', {weekday:'long', day:'numeric', month:'long'});
+  document.getElementById('cali-btn').className = 'tap-btn' + (caliDone ? ' done-cali' : '');
+  document.getElementById('cali-sub').textContent = caliDone ? 'Training erledigt ✓' : 'Heute noch kein Training';
+  document.getElementById('salsa-btn').className = 'tap-btn' + (salsaDone ? ' done-salsa' : '');
+  document.getElementById('salsa-sub').textContent = salsaDone ? 'Heute getanzt 💃' : 'Heute noch nicht getanzt';
+  document.getElementById('streak-txt').textContent = '🔥 Streak: ' + streak + ' Tage';
+}
+
+function buildSets(exNum) {
+  var inp = document.getElementById('sc-' + exNum);
+  var container = document.getElementById('sets-' + exNum);
+  var count = parseInt(inp.value) || 0;
+  if (count > 10) { count = 10; inp.value = 10; }
+  container.innerHTML = '';
+  for (var i = 1; i <= count; i++) {
+    var row = document.createElement('div');
+    row.className = 'set-row';
+    row.innerHTML =
+      '<span class="set-label">Set ' + i + '</span>' +
+      '<input class="set-input" type="number" inputmode="numeric" id="rep-' + exNum + '-' + i + '" placeholder="Wdh." min="0" max="999">' +
+      '<span class="set-unit">Wdh.</span>';
+    container.appendChild(row);
+  }
+}
+
+function toggleSalsa() {
+  salsaDone = !salsaDone;
+  if (salsaDone) { streak++; showToast('💃 Salsa gemacht! 🔥'); }
+  else { if (streak > 0) streak--; showToast('Abgehakt ↩'); }
+  persist(); render();
+}
+
+function toggleCali() {
+  caliDone = !caliDone;
+  if (caliDone) { streak++; showToast('🏋️ Super! Weiter so! 🔥'); }
+  else { if (streak > 0) streak--; showToast('Abgehakt ↩'); }
+  persist(); render();
+}
+
+function openModal() {
+  for (var i = 1; i <= 4; i++) {
+    document.getElementById('sc-' + i).value = '';
+    document.getElementById('sets-' + i).innerHTML = '';
+  }
+  document.getElementById('modal-bg').classList.add('open');
+}
+
+function bgClick(e) {
+  if (e.target === document.getElementById('modal-bg')) {
+    document.getElementById('modal-bg').classList.remove('open');
+  }
+}
+
+function saveTraining() {
+  var hasData = false;
+  for (var i = 1; i <= 4; i++) {
+    var count = parseInt(document.getElementById('sc-' + i).value) || 0;
+    if (count > 0) { hasData = true; break; }
+  }
+  if (!hasData) { showToast('Bitte mindestens eine Übung eintragen!'); return; }
+  if (!caliDone) { caliDone = true; streak++; }
+  persist();
+  document.getElementById('modal-bg').classList.remove('open');
+  render();
+  showToast('🏋️ Training gespeichert! 🔥');
+}
+
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window._tt);
+  window._tt = setTimeout(function() { t.classList.remove('show'); }, 2500);
+}
+
+render();
+</script>
+</body>
+</html>
