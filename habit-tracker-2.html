@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="HabitFlow">
+<title>HabitFlow</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; background: #0d0d1a; font-family: -apple-system, sans-serif; color: #f0f0ff; overscroll-behavior: none; }
+
+/* ── SCREENS ── */
+.screen { display: none; flex-direction: column; height: 100vh; max-width: 430px; margin: 0 auto; }
+.screen.active { display: flex; }
+.scroll { flex: 1; overflow-y: auto; padding: 0 18px 110px; -webkit-overflow-scrolling: touch; }
+.scroll::-webkit-scrollbar { display: none; }
+
+/* ── HEADER ── */
+.header { padding: 52px 18px 14px; flex-shrink: 0; }
+.app-title { font-size: 26px; font-weight: 800; background: linear-gradient(90deg,#4f8ef7,#c084fc,#f7316a); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.date-txt { font-size: 13px; color: rgba(240,240,255,0.4); margin-top: 3px; }
+
+/* ── STREAK ── */
+.streak-pill { display: inline-flex; align-items: center; gap: 6px; background: rgba(245,158,11,0.13); border: 1px solid rgba(245,158,11,0.3); border-radius: 20px; padding: 7px 14px; margin-bottom: 18px; }
+.streak-pill span { font-size: 14px; font-weight: 700; color: #f59e0b; }
+
+/* ── CARDS ── */
+.card { border-radius: 20px; padding: 16px; margin-bottom: 14px; }
+.card-cali { background: rgba(79,142,247,0.07); border: 1px solid rgba(79,142,247,0.22); }
+.card-salsa { background: rgba(247,49,106,0.07); border: 1px solid rgba(247,49,106,0.22); }
+.card-top { display: flex; align-items: center; gap: 12px; }
+.card-icon { width: 44px; height: 44px; border-radius: 13px; display: flex; align-items: center; justify-content: center; font-size: 21px; flex-shrink: 0; }
+.icon-cali { background: rgba(79,142,247,0.2); }
+.icon-salsa { background: rgba(247,49,106,0.2); }
+.card-info { flex: 1; }
+.card-name { font-size: 16px; font-weight: 700; }
+.card-sub { font-size: 12px; color: rgba(240,240,255,0.45); margin-top: 2px; }
+.tap-btn { width: 42px; height: 42px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2); background: transparent; font-size: 19px; color: rgba(255,255,255,0.2); cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+.tap-btn.done-c { background: #4f8ef7; border-color: #4f8ef7; color: #fff; }
+.tap-btn.done-s { background: #f7316a; border-color: #f7316a; color: #fff; }
+.add-btn { width: 100%; margin-top: 12px; padding: 11px; border-radius: 11px; border: 1.5px dashed rgba(79,142,247,0.45); background: rgba(79,142,247,0.07); color: #4f8ef7; font-size: 14px; font-weight: 600; cursor: pointer; }
+
+/* Salsa note */
+.salsa-note-wrap { margin-top: 12px; }
+.salsa-note { width: 100%; padding: 10px 13px; background: rgba(255,255,255,0.05); border: 1.5px solid rgba(247,49,106,0.25); border-radius: 11px; color: #f0f0ff; font-size: 14px; font-family: -apple-system, sans-serif; resize: none; outline: none; min-height: 70px; }
+.salsa-note:focus { border-color: #f7316a; }
+.note-save-btn { margin-top: 8px; padding: 8px 18px; background: rgba(247,49,106,0.15); border: 1px solid rgba(247,49,106,0.35); border-radius: 10px; color: #f7316a; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+/* ── BOTTOM NAV ── */
+.bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 430px; background: rgba(13,13,26,0.97); border-top: 1px solid rgba(255,255,255,0.07); display: flex; padding: 8px 0 28px; z-index: 50; }
+.nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px; cursor: pointer; }
+.nav-icon { font-size: 22px; }
+.nav-lbl { font-size: 10px; font-weight: 600; color: rgba(240,240,255,0.35); }
+.nav-item.active .nav-lbl { color: #f0f0ff; }
+
+/* ── MODALS ── */
+.modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.72); z-index: 200; flex-direction: column; justify-content: flex-end; }
+.modal-bg.open { display: flex; }
+.modal-sheet { background: #15152a; border-radius: 26px 26px 0 0; padding: 0 0 48px; max-height: 92vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.modal-handle { width: 38px; height: 4px; background: rgba(255,255,255,0.13); border-radius: 2px; margin: 13px auto 16px; }
+.modal-title { font-size: 19px; font-weight: 800; padding: 0 20px 4px; }
+.modal-hint { font-size: 12px; color: rgba(240,240,255,0.38); padding: 0 20px 14px; }
+
+/* Exercise blocks */
+.ex { background: #1e1e38; border-radius: 15px; padding: 13px 15px; margin: 0 15px 11px; }
+.ex-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.ex-name { font-size: 14px; font-weight: 700; }
+.sets-row { display: flex; align-items: center; gap: 8px; }
+.sets-row label { font-size: 12px; color: rgba(240,240,255,0.4); }
+.sets-row input { width: 50px; padding: 6px; background: rgba(255,255,255,0.07); border: 1.5px solid rgba(255,255,255,0.13); border-radius: 8px; color: #f0f0ff; font-size: 16px; text-align: center; outline: none; -webkit-appearance: none; }
+.sets-row input:focus { border-color: #4f8ef7; }
+.set-rows { display: flex; flex-direction: column; gap: 7px; }
+.set-row { display: flex; align-items: center; gap: 9px; }
+.set-lbl { font-size: 11px; color: rgba(240,240,255,0.38); width: 42px; flex-shrink: 0; }
+.set-inp { flex: 1; padding: 9px 6px; background: rgba(255,255,255,0.07); border: 1.5px solid rgba(255,255,255,0.1); border-radius: 9px; color: #f0f0ff; font-size: 19px; text-align: center; outline: none; -webkit-appearance: none; }
+.set-inp:focus { border-color: #4f8ef7; }
+.set-unit { font-size: 11px; color: rgba(240,240,255,0.3); width: 26px; }
+
+.save-btn { display: block; margin: 16px 15px 0; width: calc(100% - 30px); padding: 15px; background: linear-gradient(135deg,#4f8ef7,#7c3aed); border: none; border-radius: 15px; color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; }
+.save-btn:active { opacity: 0.85; }
+
+/* ── DATA SCREEN ── */
+.data-header { padding: 52px 18px 10px; flex-shrink: 0; }
+.data-title { font-size: 22px; font-weight: 800; }
+.data-sub { font-size: 13px; color: rgba(240,240,255,0.4); margin-top: 3px; }
+
+.section-lbl { font-size: 11px; font-weight: 600; letter-spacing: 1.3px; text-transform: uppercase; color: rgba(240,240,255,0.38); margin: 18px 0 10px; }
+
+/* Chart cards */
+.chart-card { background: #15152a; border-radius: 18px; padding: 16px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.07); }
+.chart-card-title { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+.chart-card-sub { font-size: 11px; color: rgba(240,240,255,0.38); margin-bottom: 12px; }
+.chart-empty { text-align: center; padding: 20px 0; color: rgba(240,240,255,0.3); font-size: 13px; }
+
+/* Weight input */
+.weight-input-row { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; }
+.weight-inp { flex: 1; padding: 12px 14px; background: #1e1e38; border: 1.5px solid rgba(255,255,255,0.12); border-radius: 12px; color: #f0f0ff; font-size: 18px; outline: none; -webkit-appearance: none; }
+.weight-inp:focus { border-color: #22d07a; }
+.weight-add-btn { padding: 12px 18px; background: rgba(34,208,122,0.15); border: 1px solid rgba(34,208,122,0.35); border-radius: 12px; color: #22d07a; font-size: 14px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.weight-add-btn:active { opacity: 0.8; }
+
+/* Salsa notes history */
+.note-entry { background: #1e1e38; border-radius: 13px; padding: 12px 14px; margin-bottom: 9px; border-left: 3px solid #f7316a; }
+.note-date { font-size: 11px; color: rgba(240,240,255,0.38); margin-bottom: 4px; }
+.note-text { font-size: 14px; line-height: 1.5; }
+
+/* ── TOAST ── */
+#toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: #22d07a; color: #fff; font-size: 14px; font-weight: 700; padding: 11px 24px; border-radius: 30px; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; z-index: 999; }
+#toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- ═══ HOME SCREEN ═══ -->
+<div class="screen active" id="scr-home">
+  <div class="header">
+    <div class="app-title">HabitFlow 🔥</div>
+    <div class="date-txt" id="date-el"></div>
+  </div>
+  <div class="scroll">
+    <div class="streak-pill"><span id="streak-txt">🔥 Streak: 0 Tage</span></div>
+
+    <!-- CALISTHENICS -->
+    <div class="card card-cali">
+      <div class="card-top">
+        <div class="card-icon icon-cali">🏋️</div>
+        <div class="card-info">
+          <div class="card-name">Calisthenics</div>
+          <div class="card-sub" id="cali-sub">Heute noch kein Training</div>
+        </div>
+        <button class="tap-btn" id="cali-btn" onclick="toggleCali()">✓</button>
+      </div>
+      <button class="add-btn" onclick="openCaliModal()">＋ Training eintragen</button>
+    </div>
+
+    <!-- SALSA -->
+    <div class="card card-salsa">
+      <div class="card-top">
+        <div class="card-icon icon-salsa">💃</div>
+        <div class="card-info">
+          <div class="card-name">Salsa</div>
+          <div class="card-sub" id="salsa-sub">Heute noch nicht getanzt</div>
+        </div>
+        <button class="tap-btn" id="salsa-btn" onclick="toggleSalsa()">✓</button>
+      </div>
+      <div class="salsa-note-wrap">
+        <textarea class="salsa-note" id="salsa-note-input" placeholder="Was hast du heute gelernt? (z.B. Neuer Schritt, Drehung...)" rows="3"></textarea>
+        <button class="note-save-btn" onclick="saveSalsaNote()">Notiz speichern</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ DATA SCREEN ═══ -->
+<div class="screen" id="scr-data">
+  <div class="data-header">
+    <div class="data-title">Daten 📊</div>
+    <div class="data-sub">Dein Fortschritt im Überblick</div>
+  </div>
+  <div class="scroll">
+
+    <!-- WEIGHT -->
+    <div class="section-lbl">⚖️ Körpergewicht</div>
+    <div class="chart-card">
+      <div class="chart-card-title">Gewichtsverlauf</div>
+      <div class="chart-card-sub">Trag dein aktuelles Gewicht ein</div>
+      <div class="weight-input-row">
+        <input class="weight-inp" type="number" inputmode="decimal" id="weight-inp" placeholder="z.B. 75.5" step="0.1" min="30" max="250">
+        <button class="weight-add-btn" onclick="addWeight()">＋ kg eintragen</button>
+      </div>
+      <div id="weight-chart"></div>
+    </div>
+
+    <!-- CALI PROGRESS -->
+    <div class="section-lbl">💪 Calisthenics Fortschritt</div>
+    <div id="cali-charts"></div>
+
+    <!-- SALSA NOTES -->
+    <div class="section-lbl">💃 Salsa — Lerntagebuch</div>
+    <div id="salsa-notes-list"></div>
+
+  </div>
+</div>
+
+<!-- ═══ BOTTOM NAV ═══ -->
+<nav class="bottom-nav">
+  <div class="nav-item active" id="nav-home" onclick="goTo('home')">
+    <span class="nav-icon">🏠</span>
+    <span class="nav-lbl">Heute</span>
+  </div>
+  <div class="nav-item" id="nav-data" onclick="goTo('data')">
+    <span class="nav-icon">📊</span>
+    <span class="nav-lbl">Daten</span>
+  </div>
+</nav>
+
+<!-- ═══ CALI MODAL ═══ -->
+<div class="modal-bg" id="cali-modal-bg" onclick="modalBgClick(event,'cali-modal-bg')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🏋️ Training eintragen</div>
+    <div class="modal-hint">Sets eingeben → Felder erscheinen automatisch</div>
+
+    <div class="ex">
+      <div class="ex-head">
+        <div class="ex-name">💪 Muscle Ups</div>
+        <div class="sets-row"><label>Sets:</label><input type="number" inputmode="numeric" id="sc-1" min="0" max="10" placeholder="0" oninput="buildSets(1)"></div>
+      </div>
+      <div class="set-rows" id="sets-1"></div>
+    </div>
+
+    <div class="ex">
+      <div class="ex-head">
+        <div class="ex-name">💪 Klimmzüge</div>
+        <div class="sets-row"><label>Sets:</label><input type="number" inputmode="numeric" id="sc-2" min="0" max="10" placeholder="0" oninput="buildSets(2)"></div>
+      </div>
+      <div class="set-rows" id="sets-2"></div>
+    </div>
+
+    <div class="ex">
+      <div class="ex-head">
+        <div class="ex-name">💪 Dips</div>
+        <div class="sets-row"><label>Sets:</label><input type="number" inputmode="numeric" id="sc-3" min="0" max="10" placeholder="0" oninput="buildSets(3)"></div>
+      </div>
+      <div class="set-rows" id="sets-3"></div>
+    </div>
+
+    <div class="ex">
+      <div class="ex-head">
+        <div class="ex-name">💪 Bizeps-Klimmzüge</div>
+        <div class="sets-row"><label>Sets:</label><input type="number" inputmode="numeric" id="sc-4" min="0" max="10" placeholder="0" oninput="buildSets(4)"></div>
+      </div>
+      <div class="set-rows" id="sets-4"></div>
+    </div>
+
+    <button class="save-btn" onclick="saveCaliTraining()">Training speichern ✓</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+var EX = ['Muscle Ups','Klimmzüge','Dips','Bizeps-Klimmzüge'];
+
+// ── STATE ──
+var S = {
+  caliDays: {},     // { 'YYYY-M-D': true }
+  salsaDays: {},
+  streak: 0,
+  logs: {},         // { 'YYYY-M-D': { 'Muscle Ups': [reps1,reps2,...], ... } }
+  salsaNotes: [],   // [ { date: 'YYYY-M-D', text: '...' } ]
+  weights: []       // [ { date: 'YYYY-M-D', kg: 75.5 } ]
+};
+
+function loadState() {
+  try {
+    var raw = localStorage.getItem('hf5');
+    if (raw) S = JSON.parse(raw);
+  } catch(e) {}
+}
+function saveState() {
+  try { localStorage.setItem('hf5', JSON.stringify(S)); } catch(e) {}
+}
+loadState();
+
+function getToday() {
+  var d = new Date();
+  return d.getFullYear() + '-' + (d.getMonth()+1) + '-' + d.getDate();
+}
+function fmtDate(key) {
+  var parts = key.split('-');
+  return parts[2] + '.' + parts[1] + '.' + parts[0];
+}
+
+// ── RENDER HOME ──
+function renderHome() {
+  document.getElementById('date-el').textContent = new Date().toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'});
+  var today = getToday();
+
+  var cDone = !!S.caliDays[today];
+  document.getElementById('cali-btn').className = 'tap-btn' + (cDone ? ' done-c' : '');
+  var log = S.logs[today];
+  if (cDone && log) {
+    var totalSets = 0;
+    EX.forEach(function(ex){ if(log[ex]) totalSets += log[ex].length; });
+    document.getElementById('cali-sub').textContent = totalSets + ' Sets heute ✓';
+  } else {
+    document.getElementById('cali-sub').textContent = 'Heute noch kein Training';
+  }
+
+  var sDone = !!S.salsaDays[today];
+  document.getElementById('salsa-btn').className = 'tap-btn' + (sDone ? ' done-s' : '');
+  document.getElementById('salsa-sub').textContent = sDone ? 'Heute getanzt 💃' : 'Heute noch nicht getanzt';
+
+  // Restore salsa note for today if exists
+  var todayNote = S.salsaNotes.find(function(n){ return n.date === today; });
+  if (todayNote) document.getElementById('salsa-note-input').value = todayNote.text;
+
+  document.getElementById('streak-txt').textContent = '🔥 Streak: ' + (S.streak||0) + ' Tage';
+}
+
+// ── TOGGLE CALI ──
+function toggleCali() {
+  var today = getToday();
+  if (S.caliDays[today]) {
+    delete S.caliDays[today];
+    delete S.logs[today];
+    if (S.streak > 0) S.streak--;
+    showToast('Abgehakt ↩');
+  } else {
+    openCaliModal();
+    return;
+  }
+  saveState(); renderHome();
+}
+
+// ── TOGGLE SALSA ──
+function toggleSalsa() {
+  var today = getToday();
+  if (S.salsaDays[today]) {
+    delete S.salsaDays[today];
+    if (S.streak > 0) S.streak--;
+    showToast('Abgehakt ↩');
+  } else {
+    S.salsaDays[today] = true;
+    S.streak = (S.streak||0) + 1;
+    showToast('💃 Salsa gemacht! 🔥');
+  }
+  saveState(); renderHome();
+}
+
+// ── SALSA NOTE ──
+function saveSalsaNote() {
+  var today = getToday();
+  var txt = document.getElementById('salsa-note-input').value.trim();
+  if (!txt) { showToast('Bitte erst etwas eintippen!'); return; }
+  S.salsaNotes = S.salsaNotes.filter(function(n){ return n.date !== today; });
+  S.salsaNotes.unshift({ date: today, text: txt });
+  saveState();
+  showToast('💃 Notiz gespeichert!');
+}
+
+// ── CALI MODAL ──
+function openCaliModal() {
+  for (var i = 1; i <= 4; i++) {
+    document.getElementById('sc-'+i).value = '';
+    document.getElementById('sets-'+i).innerHTML = '';
+  }
+  // Pre-fill if today already logged
+  var today = getToday();
+  var log = S.logs[today];
+  if (log) {
+    EX.forEach(function(ex, idx) {
+      var reps = log[ex];
+      if (reps && reps.length > 0) {
+        var sc = document.getElementById('sc-'+(idx+1));
+        sc.value = reps.length;
+        buildSets(idx+1);
+        setTimeout(function(exIdx, repArr) {
+          repArr.forEach(function(r, si) {
+            var inp = document.getElementById('rep-'+(exIdx+1)+'-'+(si+1));
+            if (inp) inp.value = r;
+          });
+        }, 10, idx, reps);
+      }
+    });
+  }
+  document.getElementById('cali-modal-bg').classList.add('open');
+}
+
+function modalBgClick(e, id) {
+  if (e.target === document.getElementById(id)) document.getElementById(id).classList.remove('open');
+}
+
+function buildSets(exNum) {
+  var inp = document.getElementById('sc-'+exNum);
+  var container = document.getElementById('sets-'+exNum);
+  var count = parseInt(inp.value) || 0;
+  if (count > 10) { count = 10; inp.value = 10; }
+  container.innerHTML = '';
+  for (var i = 1; i <= count; i++) {
+    var row = document.createElement('div');
+    row.className = 'set-row';
+    row.innerHTML = '<span class="set-lbl">Set '+i+'</span>' +
+      '<input class="set-inp" type="number" inputmode="numeric" id="rep-'+exNum+'-'+i+'" placeholder="Wdh." min="0" max="999">' +
+      '<span class="set-unit">Wdh.</span>';
+    container.appendChild(row);
+  }
+}
+
+function saveCaliTraining() {
+  var today = getToday();
+  var log = {};
+  var hasData = false;
+  EX.forEach(function(ex, idx) {
+    var exNum = idx + 1;
+    var count = parseInt(document.getElementById('sc-'+exNum).value) || 0;
+    if (count === 0) return;
+    var reps = [];
+    for (var s = 1; s <= count; s++) {
+      var inp = document.getElementById('rep-'+exNum+'-'+s);
+      reps.push(inp ? (parseInt(inp.value) || 0) : 0);
+    }
+    log[ex] = reps;
+    hasData = true;
+  });
+  if (!hasData) { showToast('Bitte mindestens eine Übung eintragen!'); return; }
+  S.logs[today] = log;
+  if (!S.caliDays[today]) {
+    S.caliDays[today] = true;
+    S.streak = (S.streak||0) + 1;
+  }
+  saveState();
+  document.getElementById('cali-modal-bg').classList.remove('open');
+  renderHome();
+  showToast('🏋️ Training gespeichert! 🔥');
+}
+
+// ── WEIGHT ──
+function addWeight() {
+  var val = parseFloat(document.getElementById('weight-inp').value);
+  if (!val || val < 30 || val > 250) { showToast('Bitte ein gültiges Gewicht eingeben!'); return; }
+  var today = getToday();
+  // Remove existing entry for today
+  S.weights = S.weights.filter(function(w){ return w.date !== today; });
+  S.weights.push({ date: today, kg: val });
+  S.weights.sort(function(a,b){ return a.date > b.date ? 1 : -1; });
+  document.getElementById('weight-inp').value = '';
+  saveState();
+  renderData();
+  showToast('⚖️ Gewicht eingetragen!');
+}
+
+// ── NAVIGATION ──
+function goTo(screen) {
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active'); });
+  document.getElementById('scr-'+screen).classList.add('active');
+  document.getElementById('nav-'+screen).classList.add('active');
+  if (screen === 'data') renderData();
+}
+
+// ── DATA SCREEN ──
+function renderData() {
+  renderWeightChart();
+  renderCaliCharts();
+  renderSalsaNotes();
+}
+
+// SVG bar chart helper
+function makeSVGChart(pts, color, labelKey, valKey) {
+  if (!pts || pts.length === 0) return '<div class="chart-empty">📭 Noch keine Daten</div>';
+  var W = 300, H = 110, barW = 24, gap = 12, startX = 10;
+  var vals = pts.map(function(p){ return p[valKey] || 0; });
+  var maxVal = Math.max.apply(null, vals) || 1;
+  var bars = '', labels = '', valLabels = '';
+  var svgW = startX * 2 + pts.length * (barW + gap);
+
+  pts.forEach(function(p, i) {
+    var x = startX + i * (barW + gap);
+    var v = p[valKey] || 0;
+    var bh = v > 0 ? Math.max(6, Math.round((v / maxVal) * (H - 20))) : 3;
+    var y = H - bh;
+    bars += '<rect x="'+x+'" y="'+y+'" width="'+barW+'" height="'+bh+'" rx="5" fill="'+color+'" opacity="'+(i === pts.length-1 ? '1' : '0.45')+'"/>';
+    if (v > 0) valLabels += '<text x="'+(x+barW/2)+'" y="'+(y-4)+'" text-anchor="middle" font-size="9" fill="rgba(240,240,255,0.65)">'+v+'</text>';
+    // short date label
+    var lbl = p[labelKey] || '';
+    labels += '<text x="'+(x+barW/2)+'" y="'+(H+13)+'" text-anchor="middle" font-size="9" fill="rgba(240,240,255,0.32)">'+lbl+'</text>';
+  });
+  return '<svg viewBox="0 0 '+svgW+' '+(H+20)+'" width="100%" style="overflow:visible">'+bars+valLabels+labels+'</svg>';
+}
+
+// Line chart for weight
+function makeLineChart(pts) {
+  if (!pts || pts.length === 0) return '<div class="chart-empty">📭 Noch kein Gewicht eingetragen</div>';
+  if (pts.length === 1) {
+    return '<div style="text-align:center;padding:16px 0"><span style="font-size:28px;font-weight:800;color:#22d07a">'+pts[0].kg+' kg</span><div style="font-size:11px;color:rgba(240,240,255,0.38);margin-top:4px">'+fmtDate(pts[0].date)+'</div></div>';
+  }
+  var W = 300, H = 100, pad = 14;
+  var vals = pts.map(function(p){ return p.kg; });
+  var minV = Math.min.apply(null,vals), maxV = Math.max.apply(null,vals);
+  var range = (maxV - minV) || 1;
+  var svgW = W + pad*2;
+  var stepX = W / (pts.length - 1);
+
+  function cx(i){ return pad + i * stepX; }
+  function cy(v){ return H - 10 - ((v - minV) / range) * (H - 20); }
+
+  var polyline = pts.map(function(p,i){ return cx(i)+','+cy(p.kg); }).join(' ');
+  var dots = '', xlabels = '', ylabels = '';
+
+  // Y axis labels
+  ylabels += '<text x="0" y="'+(cy(maxV)+4)+'" font-size="9" fill="rgba(240,240,255,0.35)">'+maxV+'</text>';
+  ylabels += '<text x="0" y="'+(cy(minV)+4)+'" font-size="9" fill="rgba(240,240,255,0.35)">'+minV+'</text>';
+
+  pts.forEach(function(p,i){
+    var x = cx(i), y = cy(p.kg);
+    dots += '<circle cx="'+x+'" cy="'+y+'" r="4" fill="#22d07a"/>';
+    dots += '<text x="'+x+'" y="'+(y-8)+'" text-anchor="middle" font-size="9" fill="rgba(240,240,255,0.65)">'+p.kg+'</text>';
+    // show date every 2 points to avoid crowding
+    if (i % Math.max(1, Math.floor(pts.length/4)) === 0 || i === pts.length-1) {
+      var parts = p.date.split('-');
+      xlabels += '<text x="'+x+'" y="'+(H+14)+'" text-anchor="middle" font-size="9" fill="rgba(240,240,255,0.32)">'+parts[2]+'.'+parts[1]+'</text>';
+    }
+  });
+
+  return '<svg viewBox="0 0 '+(svgW)+' '+(H+20)+'" width="100%" style="overflow:visible">' +
+    ylabels +
+    '<polyline points="'+polyline+'" fill="none" stroke="#22d07a" stroke-width="2" stroke-linejoin="round"/>' +
+    dots + xlabels +
+    '</svg>';
+}
+
+function renderWeightChart() {
+  document.getElementById('weight-chart').innerHTML = makeLineChart(S.weights);
+}
+
+function renderCaliCharts() {
+  var container = document.getElementById('cali-charts');
+  container.innerHTML = '';
+  var colors = ['#4f8ef7','#7c3aed','#22d07a','#f59e0b'];
+
+  EX.forEach(function(ex, idx) {
+    // Get last 14 days with data for this exercise
+    var pts = [];
+    var keys = Object.keys(S.logs).sort();
+    keys.forEach(function(key) {
+      var log = S.logs[key];
+      if (log && log[ex] && log[ex].length > 0) {
+        var maxReps = Math.max.apply(null, log[ex]);
+        var totalReps = log[ex].reduce(function(a,b){ return a+b; }, 0);
+        var parts = key.split('-');
+        pts.push({ lbl: parts[2]+'.'+parts[1], maxReps: maxReps, totalReps: totalReps });
+      }
+    });
+    // keep last 10
+    if (pts.length > 10) pts = pts.slice(pts.length - 10);
+
+    var card = document.createElement('div');
+    card.className = 'chart-card';
+    card.innerHTML = '<div class="chart-card-title">'+ex+'</div>' +
+      '<div class="chart-card-sub">Max. Wdh. pro Training</div>' +
+      makeSVGChart(pts, colors[idx], 'lbl', 'maxReps');
+    container.appendChild(card);
+  });
+}
+
+function renderSalsaNotes() {
+  var container = document.getElementById('salsa-notes-list');
+  if (!S.salsaNotes || S.salsaNotes.length === 0) {
+    container.innerHTML = '<div class="chart-empty" style="padding:20px 0">📭 Noch keine Notizen</div>';
+    return;
+  }
+  container.innerHTML = S.salsaNotes.map(function(n) {
+    return '<div class="note-entry"><div class="note-date">'+fmtDate(n.date)+'</div><div class="note-text">'+n.text+'</div></div>';
+  }).join('');
+}
+
+// ── TOAST ──
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window._tt);
+  window._tt = setTimeout(function(){ t.classList.remove('show'); }, 2500);
+}
+
+// ── INIT ──
+renderHome();
+</script>
+</body>
+</html>
