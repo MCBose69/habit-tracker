@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="HabitFlow">
+<title>HabitFlow</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#0d0d1a;font-family:-apple-system,sans-serif;color:#f0f0ff;overscroll-behavior:none}
+#app{max-width:430px;margin:0 auto;display:flex;flex-direction:column;height:100vh;position:relative}
+.screen{display:none;flex-direction:column;height:100%;width:100%}
+.screen.active{display:flex}
+.scroll{flex:1;overflow-y:auto;padding:0 18px 110px;-webkit-overflow-scrolling:touch}
+.scroll::-webkit-scrollbar{display:none}
+.header{padding:52px 18px 12px;flex-shrink:0}
+.app-title{font-size:27px;font-weight:800;background:linear-gradient(90deg,#4f8ef7,#c084fc,#f7316a);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.date-txt{font-size:13px;color:rgba(240,240,255,0.4);margin-top:3px}
+.streak-block{border-radius:16px;padding:12px 16px;margin-bottom:16px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25)}
+.streak-top{display:flex;align-items:center;justify-content:space-between}
+.streak-left{display:flex;align-items:center;gap:8px}
+.streak-fire{font-size:22px}
+.streak-num{font-size:20px;font-weight:800;color:#f59e0b;line-height:1}
+.streak-lbl{font-size:11px;color:rgba(240,240,255,0.4);margin-top:1px}
+.streak-next{font-size:11px;color:rgba(240,240,255,0.4);text-align:right;line-height:1.4}
+.countdown-warn{margin-top:10px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:8px}
+.countdown-warn.hidden{display:none}
+.warn-txt{font-size:12px;color:#f87171;font-weight:600}
+.warn-timer{font-size:14px;font-weight:800;color:#ef4444;margin-left:auto}
+.card{border-radius:20px;padding:16px;margin-bottom:14px}
+.card-cali{background:rgba(79,142,247,0.07);border:1px solid rgba(79,142,247,0.22)}
+.card-salsa{background:rgba(247,49,106,0.07);border:1px solid rgba(247,49,106,0.22)}
+.card-top{display:flex;align-items:center;gap:12px}
+.card-icon{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0}
+.icon-cali{background:rgba(79,142,247,0.2)}
+.icon-salsa{background:rgba(247,49,106,0.2)}
+.card-info{flex:1}
+.card-name{font-size:16px;font-weight:700}
+.card-sub{font-size:12px;color:rgba(240,240,255,0.45);margin-top:2px}
+.tap-btn{width:42px;height:42px;border-radius:50%;border:2px solid rgba(255,255,255,0.2);background:transparent;font-size:19px;color:rgba(255,255,255,0.2);cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s}
+.tap-btn.done-c{background:#4f8ef7;border-color:#4f8ef7;color:#fff}
+.tap-btn.done-s{background:#f7316a;border-color:#f7316a;color:#fff}
+.goal-block{margin-top:14px}
+.goal-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.goal-label{font-size:12px;color:rgba(240,240,255,0.5)}
+.goal-val{font-size:12px;font-weight:700}
+.goal-val.cali{color:#4f8ef7}
+.goal-val.salsa{color:#f7316a}
+.prog-track{height:8px;background:rgba(255,255,255,0.07);border-radius:4px;overflow:hidden}
+.prog-fill{height:8px;border-radius:4px;transition:width 0.5s ease}
+.fill-cali{background:linear-gradient(90deg,#4f8ef7,#7c3aed)}
+.fill-salsa{background:linear-gradient(90deg,#f7316a,#ff8c42)}
+.goal-sub{font-size:11px;color:rgba(240,240,255,0.3);margin-top:4px}
+.add-btn{width:100%;margin-top:12px;padding:11px;border-radius:11px;border:1.5px dashed rgba(79,142,247,0.45);background:rgba(79,142,247,0.07);color:#4f8ef7;font-size:14px;font-weight:600;cursor:pointer}
+.salsa-month-label{font-size:12px;font-weight:600;color:rgba(240,240,255,0.5);margin-top:14px;margin-bottom:6px}
+.salsa-dots{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.salsa-dot{aspect-ratio:1;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;background:rgba(255,255,255,0.05);color:rgba(240,240,255,0.22)}
+.salsa-dot.danced{background:linear-gradient(135deg,#f7316a,#ff8c42);color:#fff;box-shadow:0 2px 6px rgba(247,49,106,0.3)}
+.salsa-dot.today-empty{border:1.5px solid rgba(247,49,106,0.4);color:rgba(240,240,255,0.5)}
+.salsa-dot.future{opacity:0.3}
+.salsa-note-wrap{margin-top:12px}
+.salsa-note{width:100%;padding:10px 13px;background:rgba(255,255,255,0.05);border:1.5px solid rgba(247,49,106,0.2);border-radius:11px;color:#f0f0ff;font-size:14px;font-family:-apple-system,sans-serif;resize:none;outline:none;min-height:68px}
+.salsa-note:focus{border-color:#f7316a}
+.note-save-btn{margin-top:7px;padding:8px 16px;background:rgba(247,49,106,0.13);border:1px solid rgba(247,49,106,0.3);border-radius:10px;color:#f7316a;font-size:13px;font-weight:600;cursor:pointer}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:rgba(13,13,26,0.97);border-top:1px solid rgba(255,255,255,0.07);display:flex;padding:8px 0 28px;z-index:50}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px;cursor:pointer}
+.nav-icon{font-size:22px}
+.nav-lbl{font-size:10px;font-weight:600;color:rgba(240,240,255,0.35)}
+.nav-item.active .nav-lbl{color:#f0f0ff}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:200;flex-direction:column;justify-content:flex-end}
+.modal-bg.open{display:flex}
+.modal-sheet{background:#15152a;border-radius:26px 26px 0 0;padding:0 0 48px;max-height:92vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.modal-handle{width:38px;height:4px;background:rgba(255,255,255,0.13);border-radius:2px;margin:13px auto 16px}
+.modal-title{font-size:19px;font-weight:800;padding:0 20px 4px}
+.modal-hint{font-size:12px;color:rgba(240,240,255,0.38);padding:0 20px 14px}
+.ex{background:#1e1e38;border-radius:15px;padding:13px 15px;margin:0 15px 11px}
+.ex-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.ex-name{font-size:14px;font-weight:700}
+.sets-row{display:flex;align-items:center;gap:8px}
+.sets-row label{font-size:12px;color:rgba(240,240,255,0.4)}
+.sets-num-inp{width:50px;padding:6px;background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.13);border-radius:8px;color:#f0f0ff;font-size:16px;text-align:center;outline:none;-webkit-appearance:none}
+.sets-num-inp:focus{border-color:#4f8ef7}
+.set-rows{display:flex;flex-direction:column;gap:7px}
+.set-row-item{display:flex;align-items:center;gap:9px}
+.set-lbl{font-size:11px;color:rgba(240,240,255,0.38);width:42px;flex-shrink:0}
+.set-inp{flex:1;padding:10px 6px;background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.1);border-radius:9px;color:#f0f0ff;font-size:20px;text-align:center;outline:none;-webkit-appearance:none}
+.set-inp:focus{border-color:#4f8ef7}
+.set-unit{font-size:11px;color:rgba(240,240,255,0.3);width:26px}
+.save-btn{display:block;margin:16px 15px 0;width:calc(100% - 30px);padding:15px;background:linear-gradient(135deg,#4f8ef7,#7c3aed);border:none;border-radius:15px;color:#fff;font-size:16px;font-weight:700;cursor:pointer}
+.save-btn:active{opacity:0.85}
+.data-header{padding:52px 18px 16px;flex-shrink:0}
+.data-title{font-size:24px;font-weight:800}
+.data-sub{font-size:13px;color:rgba(240,240,255,0.4);margin-top:3px}
+.section-lbl{font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:rgba(240,240,255,0.35);margin:20px 0 10px}
+.chart-card{background:#15152a;border-radius:20px;padding:16px;margin-bottom:12px;border:1px solid rgba(255,255,255,0.07)}
+.chart-card-title{font-size:15px;font-weight:700}
+.chart-card-avg{font-size:28px;font-weight:800;margin:2px 0 1px}
+.chart-card-sub{font-size:11px;color:rgba(240,240,255,0.35);margin-bottom:14px}
+.chart-wrap{position:relative;width:100%}
+.chart-tooltip{position:absolute;background:#1e1e38;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:10px 12px;pointer-events:none;display:none;z-index:10;min-width:140px;top:0;left:50%;transform:translateX(-50%)}
+.chart-tooltip.visible{display:block}
+.tt-date{font-size:11px;color:rgba(240,240,255,0.45);margin-bottom:6px}
+.tt-set{font-size:13px;font-weight:600;color:#f0f0ff}
+.tt-avg{font-size:12px;font-weight:700;margin-top:4px}
+.weight-input-row{display:flex;gap:10px;align-items:center;margin-bottom:14px}
+.weight-inp{flex:1;padding:12px 14px;background:#1e1e38;border:1.5px solid rgba(255,255,255,0.12);border-radius:12px;color:#f0f0ff;font-size:20px;outline:none;-webkit-appearance:none}
+.weight-inp:focus{border-color:#22d07a}
+.weight-add-btn{padding:12px 16px;background:rgba(34,208,122,0.15);border:1px solid rgba(34,208,122,0.35);border-radius:12px;color:#22d07a;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap}
+.data-salsa-dots{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:16px}
+.data-dot{aspect-ratio:1;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;background:rgba(255,255,255,0.05);color:rgba(240,240,255,0.22)}
+.data-dot.danced{background:linear-gradient(135deg,#f7316a,#ff8c42);color:#fff}
+.data-dot.today-empty{border:1.5px solid rgba(247,49,106,0.4);color:rgba(240,240,255,0.5)}
+.data-dot.future{opacity:0.3}
+.note-entry{background:#1e1e38;border-radius:13px;padding:12px 14px;margin-bottom:9px;border-left:3px solid #f7316a}
+.note-date{font-size:11px;color:rgba(240,240,255,0.38);margin-bottom:4px}
+.note-text{font-size:14px;line-height:1.5}
+.no-data{text-align:center;padding:20px 0;color:rgba(240,240,255,0.25);font-size:13px}
+#toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#22d07a;color:#fff;font-size:14px;font-weight:700;padding:11px 24px;border-radius:30px;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap;z-index:999}
+#toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="screen active" id="scr-home">
+    <div class="header">
+      <div class="app-title">HabitFlow</div>
+      <div class="date-txt" id="date-el"></div>
+    </div>
+    <div class="scroll">
+      <div class="streak-block">
+        <div class="streak-top">
+          <div class="streak-left">
+            <div class="streak-fire">🔥</div>
+            <div><div class="streak-num" id="streak-num">0</div><div class="streak-lbl">Calisthenics Streak</div></div>
+          </div>
+          <div class="streak-next" id="streak-next"></div>
+        </div>
+        <div class="countdown-warn hidden" id="countdown-warn">
+          <span style="font-size:16px">⚠️</span><span class="warn-txt">Streak endet in</span>
+          <span class="warn-timer" id="countdown-timer">--:--:--</span>
+        </div>
+      </div>
+      <div class="card card-cali">
+        <div class="card-top">
+          <div class="card-icon icon-cali">🏋️</div>
+          <div class="card-info"><div class="card-name">Calisthenics</div><div class="card-sub" id="cali-sub">Heute noch kein Training</div></div>
+          <button class="tap-btn" id="cali-btn" onclick="toggleCali()">✓</button>
+        </div>
+        <div class="goal-block" id="muscle-goal-block" style="display:none">
+          <div class="goal-top"><span class="goal-label">🎯 Ziel: 10 Muscle Ups am Stück</span><span class="goal-val cali" id="cali-goal-val">0 / 10</span></div>
+          <div class="prog-track"><div class="prog-fill fill-cali" id="cali-prog" style="width:0%"></div></div>
+          <div class="goal-sub" id="cali-goal-sub"></div>
+        </div>
+        <div id="muscle-goal-empty" style="margin-top:10px;font-size:12px;color:rgba(240,240,255,0.3)">🎯 Ziel: 10 Muscle Ups — trag dein erstes Training ein!</div>
+        <button class="add-btn" onclick="openCaliModal()">＋ Training eintragen</button>
+      </div>
+      <div class="card card-salsa">
+        <div class="card-top">
+          <div class="card-icon icon-salsa">💃</div>
+          <div class="card-info"><div class="card-name">Salsa</div><div class="card-sub" id="salsa-sub">Heute noch nicht getanzt</div></div>
+          <button class="tap-btn" id="salsa-btn" onclick="toggleSalsa()">✓</button>
+        </div>
+        <div class="goal-block">
+          <div class="goal-top"><span class="goal-label" id="salsa-goal-label">🎯 Ziel diesen Monat</span><span class="goal-val salsa" id="salsa-goal-val">0 / 2</span></div>
+          <div class="prog-track"><div class="prog-fill fill-salsa" id="salsa-prog" style="width:0%"></div></div>
+          <div class="goal-sub" id="salsa-goal-sub"></div>
+        </div>
+        <div class="salsa-month-label" id="salsa-month-label"></div>
+        <div class="salsa-dots" id="salsa-dots"></div>
+        <div class="salsa-note-wrap">
+          <textarea class="salsa-note" id="salsa-note-input" placeholder="Was hast du heute gelernt?" rows="3"></textarea>
+          <button class="note-save-btn" onclick="saveSalsaNote()">Notiz speichern 💾</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen" id="scr-data">
+    <div class="data-header"><div class="data-title">Daten 📊</div><div class="data-sub">Dein gesamter Fortschritt</div></div>
+    <div class="scroll">
+      <div class="section-lbl">💪 Calisthenics</div>
+      <div id="cali-charts-container"></div>
+      <div class="section-lbl">⚖️ Körpergewicht</div>
+      <div class="chart-card">
+        <div class="chart-card-title">Gewichtsverlauf</div>
+        <div class="chart-card-avg" id="weight-latest-val" style="display:none;color:#22d07a"></div>
+        <div class="chart-card-sub" id="weight-latest-lbl"></div>
+        <div class="weight-input-row">
+          <input class="weight-inp" type="text" inputmode="decimal" id="weight-inp" placeholder="z.B. 75,5">
+          <button class="weight-add-btn" onclick="addWeight()">＋ kg</button>
+        </div>
+        <div id="weight-chart-wrap"></div>
+      </div>
+      <div class="section-lbl">💃 Salsa</div>
+      <div class="chart-card">
+        <div class="chart-card-title" id="data-salsa-month-title"></div>
+        <div class="chart-card-sub" id="data-salsa-count"></div>
+        <div class="data-salsa-dots" id="data-salsa-dots"></div>
+      </div>
+      <div class="section-lbl" style="margin-top:0">📝 Lerntagebuch</div>
+      <div id="notes-list"></div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <div class="nav-item active" id="nav-home" onclick="goTo('home')"><span class="nav-icon">🏠</span><span class="nav-lbl">Heute</span></div>
+    <div class="nav-item" id="nav-data" onclick="goTo('data')"><span class="nav-icon">📊</span><span class="nav-lbl">Daten</span></div>
+  </nav>
+</div>
+
+<div class="modal-bg" id="cali-modal-bg" onclick="modalOutside(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🏋️ Training eintragen</div>
+    <div class="modal-hint">Sets eingeben → Felder erscheinen automatisch</div>
+    <div class="ex"><div class="ex-head"><div class="ex-name">💪 Muscle Ups</div><div class="sets-row"><label>Sets:</label><input class="sets-num-inp" type="number" inputmode="numeric" id="sc-1" min="0" max="10" placeholder="0" oninput="buildSets(1)"></div></div><div class="set-rows" id="sets-1"></div></div>
+    <div class="ex"><div class="ex-head"><div class="ex-name">💪 Klimmzüge</div><div class="sets-row"><label>Sets:</label><input class="sets-num-inp" type="number" inputmode="numeric" id="sc-2" min="0" max="10" placeholder="0" oninput="buildSets(2)"></div></div><div class="set-rows" id="sets-2"></div></div>
+    <div class="ex"><div class="ex-head"><div class="ex-name">💪 Dips</div><div class="sets-row"><label>Sets:</label><input class="sets-num-inp" type="number" inputmode="numeric" id="sc-3" min="0" max="10" placeholder="0" oninput="buildSets(3)"></div></div><div class="set-rows" id="sets-3"></div></div>
+    <div class="ex"><div class="ex-head"><div class="ex-name">💪 Bizeps-Klimmzüge</div><div class="sets-row"><label>Sets:</label><input class="sets-num-inp" type="number" inputmode="numeric" id="sc-4" min="0" max="10" placeholder="0" oninput="buildSets(4)"></div></div><div class="set-rows" id="sets-4"></div></div>
+    <button class="save-btn" onclick="saveCaliTraining()">Training speichern ✓</button>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+var EX = ['Muscle Ups','Klimmzüge','Dips','Bizeps-Klimmzüge'];
+var EX_COLORS = ['#f59e0b','#4f8ef7','#22d07a','#c084fc'];
+var MONTHS = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+var STREAK_LIMIT_MS = 80*60*60*1000;
+var WARN_MS = 10*60*60*1000;
+
+// ── HISTORICAL DATA ──
+var HISTORICAL = {
+  '2026-2-15': {'Klimmzüge':[9,4,3],'Dips':[],'Bizeps-Klimmzüge':[],'Muscle Ups':[]},
+  '2026-2-18': {'Klimmzüge':[9,4,3],'Dips':[8,6,6],'Bizeps-Klimmzüge':[4],'Muscle Ups':[]},
+  '2026-2-21': {'Klimmzüge':[10,8,6],'Dips':[],'Bizeps-Klimmzüge':[],'Muscle Ups':[]},
+  '2026-2-24': {'Klimmzüge':[7,2,1],'Dips':[9,8,5],'Bizeps-Klimmzüge':[4,2,2],'Muscle Ups':[]},
+  '2026-2-27': {'Klimmzüge':[6,5,4],'Dips':[8,6,6],'Bizeps-Klimmzüge':[4,4,3],'Muscle Ups':[]},
+  '2026-3-1':  {'Klimmzüge':[7,5,5],'Dips':[8,5,4],'Bizeps-Klimmzüge':[4,3,3],'Muscle Ups':[]},
+  '2026-3-4':  {'Klimmzüge':[10,7,8],'Dips':[10,5,0],'Bizeps-Klimmzüge':[],'Muscle Ups':[]},
+  '2026-3-7':  {'Klimmzüge':[7,5,5],'Dips':[7,5],'Bizeps-Klimmzüge':[6,5,5],'Muscle Ups':[]},
+  '2026-3-10': {'Klimmzüge':[12,8,8],'Dips':[10],'Bizeps-Klimmzüge':[7,6,6],'Muscle Ups':[]},
+  '2026-3-13': {'Klimmzüge':[13,10,8],'Dips':[10,7,5],'Bizeps-Klimmzüge':[9,5],'Muscle Ups':[]},
+  '2026-3-16': {'Klimmzüge':[15,8,6],'Dips':[10,7],'Bizeps-Klimmzüge':[8],'Muscle Ups':[]},
+  '2026-3-26': {'Klimmzüge':[14,8,7],'Dips':[10,10,8],'Bizeps-Klimmzüge':[8,7],'Muscle Ups':[]},
+  '2026-3-29': {'Klimmzüge':[8,7],'Dips':[10,10,10],'Bizeps-Klimmzüge':[],'Muscle Ups':[]},
+  '2026-3-31': {'Klimmzüge':[12,8,7],'Dips':[10,10,6],'Bizeps-Klimmzüge':[9,4],'Muscle Ups':[]},
+  '2026-4-2':  {'Klimmzüge':[8,8,8],'Dips':[10,10,10],'Bizeps-Klimmzüge':[8,7,7],'Muscle Ups':[]}
+};
+
+// ── STATE ──
+var DEFAULT_STATE = {
+  caliDays:{},salsaDays:{},logs:{},salsaNotes:[],weights:[],streak:0,lastTrainingTs:null,historyLoaded:false
+};
+var S = DEFAULT_STATE;
+try{var r=localStorage.getItem('hf9');if(r)S=JSON.parse(r);}catch(e){}
+
+// Inject historical data once
+if(!S.historyLoaded){
+  Object.keys(HISTORICAL).forEach(function(k){
+    if(!S.logs[k]) S.logs[k] = HISTORICAL[k];
+    S.caliDays[k] = true;
+  });
+  S.historyLoaded = true;
+}
+
+function persist(){try{localStorage.setItem('hf9',JSON.stringify(S));}catch(e){}}
+persist();
+
+function getToday(){var d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
+function daysInMonth(y,m){return new Date(y,m,0).getDate();}
+function pad(n){return n<10?'0'+n:(''+n);}
+function fmtKey(k){var p=k.split('-');return pad(parseInt(p[2]))+'.'+pad(parseInt(p[1]))+'.'+p[0];}
+function parseWeight(s){return parseFloat(s.replace(',','.'));}
+function avg(arr){if(!arr||!arr.length)return 0;return arr.reduce(function(a,b){return a+b;},0)/arr.length;}
+
+function checkStreakBreak(){
+  if(!S.lastTrainingTs||S.streak===0)return;
+  if(Date.now()-S.lastTrainingTs>STREAK_LIMIT_MS){S.streak=0;S.lastTrainingTs=null;persist();}
+}
+function msUntilStreakEnd(){
+  if(!S.lastTrainingTs||S.streak===0)return null;
+  var rem=STREAK_LIMIT_MS-(Date.now()-S.lastTrainingTs);
+  return rem>0?rem:0;
+}
+function formatCd(ms){var s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;return pad(h)+':'+pad(m)+':'+pad(sec);}
+
+function getBestMuscleUp(){
+  var best=0;
+  Object.values(S.logs).forEach(function(log){
+    var reps=log['Muscle Ups'];
+    if(reps&&reps.length>0){var mx=Math.max.apply(null,reps);if(mx>best)best=mx;}
+  });
+  return best;
+}
+function hasMuscleUpData(){
+  return Object.values(S.logs).some(function(log){return log['Muscle Ups']&&log['Muscle Ups'].length>0&&Math.max.apply(null,log['Muscle Ups'])>0;});
+}
+function getSalsaGoal(){var m=new Date().getMonth()+1;return m===4?2:10;}
+
+function renderHome(){
+  checkStreakBreak();
+  var now=new Date(),today=getToday();
+  document.getElementById('date-el').textContent=now.toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'});
+  document.getElementById('streak-num').textContent=S.streak||0;
+  var rem=msUntilStreakEnd();
+  var warnEl=document.getElementById('countdown-warn');
+  var nextEl=document.getElementById('streak-next');
+  if(S.streak>0&&rem!==null){
+    nextEl.textContent='Nächstes Training\nin ~'+Math.ceil(rem/3600000)+'h';
+    rem<=WARN_MS?warnEl.classList.remove('hidden'):warnEl.classList.add('hidden');
+  }else{warnEl.classList.add('hidden');nextEl.textContent='';}
+
+  var cDone=!!S.caliDays[today];
+  document.getElementById('cali-btn').className='tap-btn'+(cDone?' done-c':'');
+  var log=S.logs[today];
+  if(cDone&&log){var ts=0;EX.forEach(function(ex){if(log[ex])ts+=log[ex].length;});document.getElementById('cali-sub').textContent=ts+' Sets heute ✓';}
+  else{document.getElementById('cali-sub').textContent='Heute noch kein Training';}
+
+  var hasM=hasMuscleUpData();
+  document.getElementById('muscle-goal-block').style.display=hasM?'block':'none';
+  document.getElementById('muscle-goal-empty').style.display=hasM?'none':'block';
+  if(hasM){
+    var best=getBestMuscleUp();
+    document.getElementById('cali-goal-val').textContent=best+' / 10 Wdh.';
+    document.getElementById('cali-prog').style.width=Math.min(100,best*10)+'%';
+    document.getElementById('cali-goal-sub').textContent=best>=10?'🏆 Ziel erreicht!':(10-best)+' Wdh. noch bis zum Ziel';
+  }
+
+  var sDone=!!S.salsaDays[today];
+  document.getElementById('salsa-btn').className='tap-btn'+(sDone?' done-s':'');
+  document.getElementById('salsa-sub').textContent=sDone?'Heute getanzt 💃':'Heute noch nicht getanzt';
+  var m=now.getMonth()+1,y=now.getFullYear();
+  var goal=getSalsaGoal();
+  var prefix=y+'-'+m+'-';
+  var count=Object.keys(S.salsaDays).filter(function(k){return k.startsWith(prefix);}).length;
+  document.getElementById('salsa-goal-label').textContent='🎯 Ziel '+MONTHS[m-1]+': '+goal+'x tanzen';
+  document.getElementById('salsa-goal-val').textContent=count+' / '+goal;
+  document.getElementById('salsa-prog').style.width=Math.min(100,Math.round(count/goal*100))+'%';
+  var dLeft=daysInMonth(y,m)-now.getDate();
+  document.getElementById('salsa-goal-sub').textContent=dLeft+' Tage verbleiben · '+(count>=goal?'🎉 Ziel erreicht!':'noch '+(goal-count)+'x');
+  document.getElementById('salsa-month-label').textContent=MONTHS[m-1]+' '+y;
+  renderDots('salsa-dots',y,m,false);
+  var todayNote=(S.salsaNotes||[]).find(function(n){return n.date===today;});
+  document.getElementById('salsa-note-input').value=todayNote?todayNote.text:'';
+}
+
+function renderDots(cid,y,m,isData){
+  var now=new Date(),todayD=now.getDate(),todayM=now.getMonth()+1,todayY=now.getFullYear();
+  var total=daysInMonth(y,m),isCur=(y===todayY&&m===todayM);
+  var el=document.getElementById(cid);el.innerHTML='';
+  for(var d=1;d<=total;d++){
+    var key=y+'-'+m+'-'+d,danced=!!S.salsaDays[key],isToday=isCur&&d===todayD,isFut=isCur&&d>todayD;
+    var dot=document.createElement('div');
+    var cls=(isData?'data-dot':'salsa-dot')+(danced?' danced':(isToday?' today-empty':(isFut?' future':'')));
+    dot.className=cls;dot.textContent=d;el.appendChild(dot);
+  }
+}
+
+function toggleCali(){
+  var today=getToday();
+  if(S.caliDays[today]){delete S.caliDays[today];delete S.logs[today];if(S.streak>0)S.streak--;showToast('Abgehakt ↩');persist();renderHome();}
+  else{openCaliModal();}
+}
+function toggleSalsa(){
+  var today=getToday();
+  if(S.salsaDays[today]){delete S.salsaDays[today];showToast('Abgehakt ↩');}
+  else{S.salsaDays[today]=true;showToast('💃 Salsa gemacht!');}
+  persist();renderHome();
+}
+function saveSalsaNote(){
+  var today=getToday(),txt=document.getElementById('salsa-note-input').value.trim();
+  if(!txt){showToast('Bitte erst etwas schreiben!');return;}
+  S.salsaNotes=(S.salsaNotes||[]).filter(function(n){return n.date!==today;});
+  S.salsaNotes.unshift({date:today,text:txt});persist();showToast('💾 Notiz gespeichert!');
+}
+
+function openCaliModal(){
+  for(var i=1;i<=4;i++){document.getElementById('sc-'+i).value='';document.getElementById('sets-'+i).innerHTML='';}
+  var today=getToday(),log=S.logs[today];
+  if(log){EX.forEach(function(ex,idx){var reps=log[ex];if(reps&&reps.length>0){document.getElementById('sc-'+(idx+1)).value=reps.length;buildSets(idx+1);reps.forEach(function(r,si){setTimeout(function(ei,si2,rv){var inp=document.getElementById('rep-'+ei+'-'+(si2+1));if(inp)inp.value=rv;},40,idx+1,si,r);});}});}
+  document.getElementById('cali-modal-bg').classList.add('open');
+}
+function modalOutside(e){if(e.target===document.getElementById('cali-modal-bg'))document.getElementById('cali-modal-bg').classList.remove('open');}
+function buildSets(exNum){
+  var inp=document.getElementById('sc-'+exNum),cont=document.getElementById('sets-'+exNum);
+  var count=parseInt(inp.value)||0;if(count>10){count=10;inp.value=10;}
+  cont.innerHTML='';
+  for(var i=1;i<=count;i++){var row=document.createElement('div');row.className='set-row-item';row.innerHTML='<span class="set-lbl">Set '+i+'</span><input class="set-inp" type="number" inputmode="numeric" id="rep-'+exNum+'-'+i+'" placeholder="Wdh." min="0" max="999"><span class="set-unit">Wdh.</span>';cont.appendChild(row);}
+}
+function saveCaliTraining(){
+  var today=getToday(),log={},hasData=false;
+  EX.forEach(function(ex,idx){var n=idx+1,count=parseInt(document.getElementById('sc-'+n).value)||0;if(!count)return;var reps=[];for(var s=1;s<=count;s++){var inp=document.getElementById('rep-'+n+'-'+s);reps.push(inp?(parseInt(inp.value)||0):0);}log[ex]=reps;hasData=true;});
+  if(!hasData){showToast('Bitte mindestens eine Übung eintragen!');return;}
+  S.logs[today]=log;
+  if(!S.caliDays[today]){S.caliDays[today]=true;S.streak=(S.streak||0)+1;}
+  S.lastTrainingTs=Date.now();
+  persist();document.getElementById('cali-modal-bg').classList.remove('open');renderHome();showToast('🏋️ Training gespeichert! 🔥');
+}
+
+function addWeight(){
+  var raw=document.getElementById('weight-inp').value.trim();
+  var val=parseWeight(raw);
+  if(!val||val<30||val>250){showToast('Bitte gültiges Gewicht eingeben!');return;}
+  var today=getToday();
+  S.weights=(S.weights||[]).filter(function(w){return w.date!==today;});
+  S.weights.push({date:today,kg:val});
+  S.weights.sort(function(a,b){return a.date>b.date?1:-1;});
+  document.getElementById('weight-inp').value='';
+  persist();renderData();showToast('⚖️ '+val+' kg gespeichert!');
+}
+
+function goTo(screen){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active');});
+  document.getElementById('scr-'+screen).classList.add('active');
+  document.getElementById('nav-'+screen).classList.add('active');
+  if(screen==='data')renderData();
+}
+
+// ── LINE CHART ──
+function makeLineChart(pts, color){
+  if(!pts||pts.length<2) return pts&&pts.length===1?'<div class="no-data">Noch 1 weiteres Training für den Graph!</div>':'<div class="no-data">📭 Noch keine Daten</div>';
+  var W=300,H=110,padL=28,padR=8,padT=18,padB=26;
+  var vals=pts.map(function(p){return p.v;});
+  var minV=Math.min.apply(null,vals),maxV=Math.max.apply(null,vals);
+  var range=maxV-minV||1;
+  var svgW=W+padL+padR,svgH=H+padT+padB;
+  function cx(i){return padL+Math.round(i*(W/Math.max(pts.length-1,1)));}
+  function cy(v){return padT+Math.round(H-((v-minV)/range)*H);}
+  var gradId='g'+Math.random().toString(36).substr(2,5);
+  var fillD='M'+cx(0)+','+cy(pts[0].v)+pts.slice(1).map(function(p,i){return ' L'+cx(i+1)+','+cy(p.v);}).join('')+' L'+cx(pts.length-1)+','+(padT+H)+' L'+cx(0)+','+(padT+H)+' Z';
+  var lineD='M'+cx(0)+','+cy(pts[0].v)+pts.slice(1).map(function(p,i){return ' L'+cx(i+1)+','+cy(p.v);}).join('');
+  var yL='<text x="'+(padL-4)+'" y="'+(padT+4)+'" text-anchor="end" font-size="9" fill="rgba(240,240,255,0.28)">'+Math.round(maxV)+'</text>'+
+         '<text x="'+(padL-4)+'" y="'+(padT+H)+'" text-anchor="end" font-size="9" fill="rgba(240,240,255,0.28)">'+Math.round(minV)+'</text>';
+  var xL='';var step=Math.max(1,Math.ceil(pts.length/5));
+  pts.forEach(function(p,i){if(i%step===0||i===pts.length-1){var pr=p.k.split('-');xL+='<text x="'+cx(i)+'" y="'+(padT+H+16)+'" text-anchor="middle" font-size="9" fill="rgba(240,240,255,0.26)">'+pad(parseInt(pr[2]))+'.'+pad(parseInt(pr[1]))+'</text>';}});
+  var visDots=pts.map(function(p,i){return '<circle cx="'+cx(i)+'" cy="'+cy(p.v)+'" r="3" fill="'+color+'"/>';}).join('');
+  var touchDots=pts.map(function(p,i){return '<circle cx="'+cx(i)+'" cy="'+cy(p.v)+'" r="14" fill="transparent" class="chart-point" data-idx="'+i+'"/>';}).join('');
+  return '<svg viewBox="0 0 '+svgW+' '+svgH+'" width="100%" style="overflow:visible;display:block">'+
+    '<defs><linearGradient id="'+gradId+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+color+'" stop-opacity="0.22"/><stop offset="100%" stop-color="'+color+'" stop-opacity="0.01"/></linearGradient></defs>'+
+    '<path d="'+fillD+'" fill="url(#'+gradId+')" />'+
+    '<path d="'+lineD+'" fill="none" stroke="'+color+'" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>'+
+    yL+xL+visDots+touchDots+'</svg>';
+}
+
+function renderData(){renderCaliCharts();renderWeightChart();renderSalsaData();}
+
+function renderCaliCharts(){
+  var cont=document.getElementById('cali-charts-container');cont.innerHTML='';
+  EX.forEach(function(ex,idx){
+    var color=EX_COLORS[idx];
+    var pts=[];
+    Object.keys(S.logs).sort().forEach(function(key){
+      var log=S.logs[key];
+      if(log&&log[ex]){
+        var nonZero=log[ex].filter(function(r){return r>0;});
+        if(nonZero.length>0) pts.push({k:key,v:Math.round(avg(nonZero)*10)/10,sets:log[ex]});
+      }
+    });
+
+    var bestDayAvg = pts.length>0 ? Math.round(Math.max.apply(null,pts.map(function(p){return p.v;}))*10)/10 : null;
+    var card = document.createElement('div');
+    card.className = 'chart-card';
+    card.innerHTML=
+      '<div class="chart-card-title">'+ex+'</div>'+
+      (bestDayAvg!==null?'<div class="chart-card-avg" style="color:'+color+'">'+bestDayAvg+' Ø Wdh.</div>':'') +
+      '<div class="chart-card-sub">'+(pts.length>0?'Bester Trainingstag · '+pts.length+' Trainings gesamt':'Noch keine Daten')+'</div>'+
+      '<div class="chart-wrap" id="cw-'+idx+'">'+makeLineChart(pts,color)+'</div>'+
+      '<div class="chart-tooltip" id="ctt-'+idx+'"><div class="tt-date" id="cttd-'+idx+'"></div><div id="ctts-'+idx+'"></div><div class="tt-avg" id="ctta-'+idx+'" style="color:'+color+'"></div></div>';
+    cont.appendChild(card);
+    if(pts.length>=2){
+      setTimeout(function(ci,cpts,cc){
+        var wrap=document.getElementById('cw-'+ci);
+        if(!wrap)return;
+        wrap.querySelectorAll('.chart-point').forEach(function(dot){
+          dot.addEventListener('click',function(){
+            var di=parseInt(dot.getAttribute('data-idx'));
+            var pt=cpts[di];
+            var tt=document.getElementById('ctt-'+ci);
+            document.getElementById('cttd-'+ci).textContent=fmtKey(pt.k);
+            var sEl=document.getElementById('ctts-'+ci);sEl.innerHTML='';
+            pt.sets.forEach(function(r,i){var d=document.createElement('div');d.className='tt-set';d.textContent='Set '+(i+1)+': '+r+' Wdh.';sEl.appendChild(d);});
+            var nz=pt.sets.filter(function(r){return r>0;});
+            document.getElementById('ctta-'+ci).textContent='Ø '+Math.round(avg(nz)*10)/10+' Wdh.';
+            tt.classList.add('visible');
+            clearTimeout(tt._t);tt._t=setTimeout(function(){tt.classList.remove('visible');},4000);
+          });
+        });
+      },60,idx,pts,color);
+    }
+  });
+}
+
+function renderWeightChart(){
+  var ws=S.weights||[];
+  var lv=document.getElementById('weight-latest-val'),ll=document.getElementById('weight-latest-lbl');
+  if(ws.length>0){var last=ws[ws.length-1];lv.style.display='block';lv.textContent=last.kg+' kg';ll.textContent='Zuletzt: '+fmtKey(last.date);}
+  else{lv.style.display='none';ll.textContent='';}
+  var pts=ws.map(function(w){return{k:w.date,v:w.kg};});
+  document.getElementById('weight-chart-wrap').innerHTML=makeLineChart(pts,'#22d07a');
+}
+
+function renderSalsaData(){
+  var now=new Date(),m=now.getMonth()+1,y=now.getFullYear();
+  var prefix=y+'-'+m+'-';
+  var count=Object.keys(S.salsaDays).filter(function(k){return k.startsWith(prefix);}).length;
+  document.getElementById('data-salsa-month-title').textContent=MONTHS[m-1]+' '+y;
+  document.getElementById('data-salsa-count').textContent=count+'x getanzt diesen Monat';
+  renderDots('data-salsa-dots',y,m,true);
+  var nl=document.getElementById('notes-list');
+  var notes=S.salsaNotes||[];
+  nl.innerHTML=notes.length===0?'<div class="no-data">📭 Noch keine Notizen</div>':notes.map(function(n){return '<div class="note-entry"><div class="note-date">'+fmtKey(n.date)+'</div><div class="note-text">'+n.text+'</div></div>';}).join('');
+}
+
+function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(window._tt);window._tt=setTimeout(function(){t.classList.remove('show');},2500);}
+setInterval(function(){
+  var rem=msUntilStreakEnd();if(rem===null)return;
+  checkStreakBreak();
+  var w=document.getElementById('countdown-warn');
+  if(S.streak>0&&rem<=WARN_MS&&rem>0){w.classList.remove('hidden');document.getElementById('countdown-timer').textContent=formatCd(rem);}
+  else{w.classList.add('hidden');}
+  if(rem===0)renderHome();
+},1000);
+
+renderHome();
+</script>
+</body>
+</html>
